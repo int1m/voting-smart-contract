@@ -13,13 +13,17 @@ describe('Vote', () => {
 
   const ballot = [0];
   const userSecret = 'top secret e';
+
   let userKeys: crypto.KeyPairSyncResult<string, string>;
+  let userKeysTwo: crypto.KeyPairSyncResult<string, string>;
   let encryptedBallot: Buffer;
+  let encryptedBallotTwo: Buffer;
   let blindedMessage: BigInteger;
   let privateKey: BigInteger;
   let signature: BigInteger;
   let unBlindedSignature: BigInteger;
   let encryptedBallotHex: string;
+  let encryptedBallotTwoHex: string;
 
   const oracle = new Oracle();
 
@@ -40,8 +44,27 @@ describe('Vote', () => {
       },
     });
 
+    userKeysTwo = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 4096,
+      publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem',
+      },
+      privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem',
+        cipher: 'aes-256-cbc',
+        passphrase: userSecret,
+      },
+    });
+
     encryptedBallot = crypto.publicEncrypt({
       key: userKeys.publicKey,
+      padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+    }, Buffer.from(ballot));
+
+    encryptedBallotTwo = crypto.publicEncrypt({
+      key: userKeysTwo.publicKey,
       padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
     }, Buffer.from(ballot));
 
@@ -62,6 +85,7 @@ describe('Vote', () => {
     });
 
     encryptedBallotHex = encryptedBallot.toString('hex');
+    encryptedBallotTwoHex = encryptedBallotTwo.toString('hex');
   });
 
   it('should push ballot', async () => {
@@ -76,6 +100,52 @@ describe('Vote', () => {
     const ballotIndex = ethers.BigNumber.from(result.value).toNumber();
 
     await expect(ballotIndex).to.be.equal(0);
+  });
+
+  it('should push two ballot', async () => {
+    const contract = await oracle.createTestVoting(owner);
+    await contract.pushBallot(
+      `0x${encryptedBallotHex}`,
+      messageToHashInt(encryptedBallot).toString(),
+      unBlindedSignature.toString(),
+    );
+
+    const blindResultTwo: { blindedMessage: BigInteger, privateKey: BigInteger } = blind({
+      message: encryptedBallotTwo,
+      modulus: oracle.modulus,
+      exponent: oracle.exponent,
+    });
+
+    const signatureTwo: BigInteger = oracle.singBallot(blindResultTwo.blindedMessage);
+
+    const unBlindedSignatureTwo = unBlind({
+      signature: signatureTwo,
+      modulus: oracle.modulus,
+      privateKey: blindResultTwo.privateKey,
+    });
+
+    await contract.pushBallot(
+      `0x${encryptedBallotTwoHex}`,
+      messageToHashInt(encryptedBallotTwo).toString(),
+      unBlindedSignatureTwo.toString(),
+    );
+
+    const ballotsArrayLength = ethers.BigNumber.from(
+      await contract.getBallotCount(),
+    ).toNumber();
+    expect(ballotsArrayLength).to.be.equal(2);
+  });
+
+  it('should emitted event added ballot', async () => {
+    const contract = await oracle.createTestVoting(owner);
+
+    await expect(
+      contract.connect(user).pushBallot(
+        `0x${encryptedBallotHex}`,
+        messageToHashInt(encryptedBallot).toString(),
+        unBlindedSignature.toString(),
+      ),
+    ).to.emit(contract, 'BallotAdded').withArgs(0, user.address, unBlindedSignature.toString());
   });
 
   it('should push ballot private key and decrypted data', async () => {
@@ -112,7 +182,7 @@ describe('Vote', () => {
   it('should return ballots array length', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),
@@ -127,7 +197,7 @@ describe('Vote', () => {
   it('should return verified signature array length', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),
@@ -157,7 +227,7 @@ describe('Vote', () => {
   it('should throw an error signature has already been used to vote', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),

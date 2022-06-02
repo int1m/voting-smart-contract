@@ -18,7 +18,7 @@ describe('VotingPlatform', () => {
   });
 
   it('should create vote', async () => {
-    const result = await contract.createVote(
+    await contract.createVote(
       false,
       Math.round(Date.now() / 1000) - 60,
       Math.round(Date.now() / 1000) + 84600,
@@ -26,10 +26,19 @@ describe('VotingPlatform', () => {
       oracle.modulus,
       oracle.exponent,
     );
+  });
 
-    const ballotIndex = ethers.BigNumber.from(result.value).toNumber();
-
-    await expect(ballotIndex).to.be.equal(0);
+  it('should emitted event added vote', async () => {
+    await expect(
+      contract.createVote(
+        false,
+        Math.round(Date.now() / 1000) - 60,
+        Math.round(Date.now() / 1000) + 84600,
+        oracle.candidates,
+        oracle.modulus,
+        oracle.exponent,
+      ),
+    ).to.emit(contract, 'VoteAdded').withArgs(0);
   });
 
   it('should return votes array length', async () => {
