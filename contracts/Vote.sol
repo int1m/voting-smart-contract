@@ -79,6 +79,11 @@ contract Vote {
         _;
     }
 
+    modifier ballotPrivateKeyPushTimeNotEnd() {
+        require(block.timestamp <= dateOfEndAddPrivateKeys, 'Time to add decryption keys ends');
+        _;
+    }
+
     modifier signVerify(uint _originalMessage, uint _signature) {
         bytes32 compareOne = keccak256(abi.encodePacked(_originalMessage));
         bytes32 compareTwo = keccak256(abi.encodePacked(expMod(_signature, modulus, exponent)));
@@ -137,11 +142,10 @@ contract Vote {
         emit BallotAdded(ballots.length - 1, msg.sender, _signature);
     }
 
-    // TODO: add modify - time to add decryption keys
     function pushBallotPrivateKey(
         uint index,
         bytes memory _privateKey
-    ) public ballotOwnerCheck(index) ballotPrivateKeyNotSet(index) returns (Ballot memory) {
+    ) public ballotOwnerCheck(index) ballotPrivateKeyNotSet(index) ballotPrivateKeyPushTimeNotEnd returns (Ballot memory) {
         ballots[index].privateKey = _privateKey;
         return ballots[index];
     }

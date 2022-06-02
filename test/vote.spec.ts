@@ -242,21 +242,19 @@ describe('Vote', () => {
   it('should throw an error you are not the ballot owner', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    contract.on('BallotAdded', async (eIndex: BigNumber) => {
+      const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
+
+      await expect(
+        contract.connect(user).pushBallotPrivateKey(eIndex.toNumber(), `0x${privateKeyHex}`),
+      ).to.be.revertedWith('You are not the ballot owner');
+    });
+
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),
     );
-
-    const ballotIndex = ethers.BigNumber.from(result.value).toNumber();
-
-    const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
-
-    await contract.pushBallotPrivateKey(ballotIndex, `0x${privateKeyHex}`);
-
-    await expect(
-      contract.connect(user).pushBallotPrivateKey(ballotIndex, `0x${privateKeyHex}`),
-    ).to.be.revertedWith('You are not the ballot owner');
   });
 
   it('should throw an error private key already set', async () => {
