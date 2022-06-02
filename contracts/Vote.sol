@@ -26,8 +26,9 @@ contract Vote {
 
     event BallotAdded(uint index, address sender, uint signature);
 
-    modifier votingCreateDateTimeCheck(uint _dateOfStart, uint _dateOfEnd) {
+    modifier votingCreateDateTimeCheck(uint _dateOfStart, uint _dateOfEnd, uint _dateOfEndAddPrivateKeys) {
         require(_dateOfStart < _dateOfEnd, 'End date of voting must be later than start date');
+        require(_dateOfEnd <= _dateOfEndAddPrivateKeys, 'The time to add decryption keys must be greater than or equal to the end time of voting');
         _;
     }
 
@@ -39,7 +40,7 @@ contract Vote {
         VotingPlatformLib.Candidate[] memory _candidates,
         uint _modulus,
         uint _exponent
-    ) votingCreateDateTimeCheck(_dateOfStart, _dateOfEnd) {
+    ) votingCreateDateTimeCheck(_dateOfStart, _dateOfEnd, _dateOfEndAddPrivateKeys) {
         multipleChoice = _multipleChoice;
         dateOfCreating = block.timestamp;
         dateOfStart = _dateOfStart;

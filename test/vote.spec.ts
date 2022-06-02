@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import * as crypto from 'crypto';
@@ -221,6 +221,13 @@ describe('Vote', () => {
     ).to.be.revertedWith('End date of voting must be later than start date');
   });
 
+  it('should throw an error time to add decryption keys must be greater than or equal to the end time of voting', async () => {
+    const startDate = Math.round(Date.now() / 1000);
+    await expect(
+      oracle.createTestVoting(owner, false, startDate - 60, startDate, startDate - 40),
+    ).to.be.revertedWith('The time to add decryption keys must be greater than or equal to the end time of voting');
+  });
+
   it('should throw an error signature has already been used to vote', async () => {
     const contract = await oracle.createTestVoting(owner);
 
@@ -256,6 +263,41 @@ describe('Vote', () => {
       unBlindedSignature.toString(),
     );
   });
+
+  function delay(ms: number) {
+    // eslint-disable-next-line no-promise-executor-return
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  it('should throw an error time to add decryption keys ends', async () => {
+    const startDate = Math.round(Date.now() / 1000);
+    const contract = await oracle.createTestVoting(
+      owner,
+      false,
+      startDate,
+      startDate + 15,
+      startDate + 15,
+    );
+
+    let index = 0;
+
+    contract.on('BallotAdded', async (eIndex: BigNumber) => {
+      index = eIndex.toNumber();
+    });
+
+    await contract.pushBallot(
+      `0x${encryptedBallotHex}`,
+      messageToHashInt(encryptedBallot).toString(),
+      unBlindedSignature.toString(),
+    );
+
+    await delay(5000);
+
+    const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
+    await expect(
+      contract.pushBallotPrivateKey(index, `0x${privateKeyHex}`),
+    ).to.be.revertedWith('Time to add decryption keys ends');
+  }).timeout(20000);
 
   it('should throw an error private key already set', async () => {
     const contract = await oracle.createTestVoting(owner);
