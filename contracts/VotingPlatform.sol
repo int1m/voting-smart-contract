@@ -4,6 +4,13 @@ pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
 
+library VotingPlatformLib {
+    struct Candidate {
+        uint id;
+        string name;
+    }
+}
+
 contract VotingPlatform {
     address public owner;
     Vote[] private votes;
@@ -17,12 +24,29 @@ contract VotingPlatform {
         _;
     }
 
-    function getVotesCount() external view returns(uint) {
+    function getVotesCount() external view returns (uint) {
         return votes.length;
     }
 
-    function createVote() external onlyOwner {
-
+    function createVote(
+        bool _multipleChoice,
+        uint _dateOfStart,
+        uint _dateOfEnd,
+        VotingPlatformLib.Candidate[] memory _candidates,
+        uint _modulus,
+        uint _exponent
+    ) external onlyOwner returns (uint) {
+        votes.push(
+            new Vote(
+                _multipleChoice,
+                _dateOfStart,
+                _dateOfEnd,
+                _candidates,
+                _modulus,
+                _exponent
+            )
+        );
+        return votes.length - 1;
     }
 }
 
@@ -34,13 +58,8 @@ contract Vote {
     uint public modulus;
     uint public exponent;
     uint[] public verifiedSignature;
-    Candidate[] public candidates;
+    VotingPlatformLib.Candidate[] public candidates;
     Ballot[] public ballots;
-
-    struct Candidate {
-        uint id;
-        string name;
-    }
 
     struct Ballot {
         address owner;
@@ -58,7 +77,7 @@ contract Vote {
         bool _multipleChoice,
         uint _dateOfStart,
         uint _dateOfEnd,
-        Candidate[] memory _candidates,
+        VotingPlatformLib.Candidate[] memory _candidates,
         uint _modulus,
         uint _exponent
     ) votingCreateDateTimeCheck(_dateOfStart, _dateOfEnd) {
@@ -105,7 +124,7 @@ contract Vote {
         bytes32 compareTwo = keccak256(abi.encodePacked(expMod(_signature, modulus, exponent)));
 
         require(compareOne == compareTwo, 'Signature not verified');
-    _;
+        _;
     }
 
     function expMod(
@@ -131,15 +150,15 @@ contract Vote {
         }
     }
 
-    function getCandidateCount() external view returns(uint) {
+    function getCandidateCount() external view returns (uint) {
         return candidates.length;
     }
 
-    function getBallotCount() external view returns(uint) {
+    function getBallotCount() external view returns (uint) {
         return ballots.length;
     }
 
-    function getVerifiedSignatureCount() external view returns(uint) {
+    function getVerifiedSignatureCount() external view returns (uint) {
         return verifiedSignature.length;
     }
 
@@ -147,14 +166,13 @@ contract Vote {
         bytes memory _encryptedValue,
         uint _originalMessageHash,
         uint _signature
-    ) public signVerify(_originalMessageHash, _signature) signNotUsed(_signature) ballotDateTimeCheck returns(uint) {
-        Ballot memory newBallot = Ballot({
-            owner: msg.sender,
-            encryptedValue: _encryptedValue,
-            privateKey: '0x0',
-            dateOfVote: block.timestamp
-        });
-        ballots.push(newBallot);
+    ) public signVerify(_originalMessageHash, _signature) signNotUsed(_signature) ballotDateTimeCheck returns (uint) {
+        ballots.push(Ballot({
+            owner : msg.sender,
+            encryptedValue : _encryptedValue,
+            privateKey : '0x0',
+            dateOfVote : block.timestamp
+        }));
         verifiedSignature.push(_signature);
         return ballots.length - 1;
     }
@@ -162,7 +180,7 @@ contract Vote {
     function pushBallotPrivateKey(
         uint index,
         bytes memory _privateKey
-    ) public ballotOwnerCheck(index) ballotPrivateKeyNotSet(index) returns(Ballot memory) {
+    ) public ballotOwnerCheck(index) ballotPrivateKeyNotSet(index) returns (Ballot memory) {
         ballots[index].privateKey = _privateKey;
         return ballots[index];
     }
