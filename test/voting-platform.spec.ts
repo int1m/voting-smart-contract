@@ -22,6 +22,7 @@ describe('VotingPlatform', () => {
       false,
       Math.round(Date.now() / 1000) - 60,
       Math.round(Date.now() / 1000) + 84600,
+      Math.round(Date.now() / 1000) + 84600,
       oracle.candidates,
       oracle.modulus,
       oracle.exponent,
@@ -34,6 +35,7 @@ describe('VotingPlatform', () => {
         false,
         Math.round(Date.now() / 1000) - 60,
         Math.round(Date.now() / 1000) + 84600,
+        Math.round(Date.now() / 1000) + 84600,
         oracle.candidates,
         oracle.modulus,
         oracle.exponent,
@@ -45,6 +47,7 @@ describe('VotingPlatform', () => {
     await contract.createVote(
       false,
       Math.round(Date.now() / 1000) - 60,
+      Math.round(Date.now() / 1000) + 84600,
       Math.round(Date.now() / 1000) + 84600,
       oracle.candidates,
       oracle.modulus,
@@ -62,6 +65,7 @@ describe('VotingPlatform', () => {
       contract.connect(user).createVote(
         false,
         Math.round(Date.now() / 1000) - 60,
+        Math.round(Date.now() / 1000) + 84600,
         Math.round(Date.now() / 1000) + 84600,
         oracle.candidates,
         oracle.modulus,

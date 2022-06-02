@@ -10,6 +10,7 @@ contract Vote {
     uint public dateOfCreating;
     uint public dateOfStart;
     uint public dateOfEnd;
+    uint public dateOfEndAddPrivateKeys;
     uint public modulus;
     uint public exponent;
     uint[] public verifiedSignature;
@@ -34,6 +35,7 @@ contract Vote {
         bool _multipleChoice,
         uint _dateOfStart,
         uint _dateOfEnd,
+        uint _dateOfEndAddPrivateKeys,
         VotingPlatformLib.Candidate[] memory _candidates,
         uint _modulus,
         uint _exponent
@@ -42,6 +44,7 @@ contract Vote {
         dateOfCreating = block.timestamp;
         dateOfStart = _dateOfStart;
         dateOfEnd = _dateOfEnd;
+        dateOfEndAddPrivateKeys = _dateOfEndAddPrivateKeys;
         modulus = _modulus;
         exponent = _exponent;
         for (uint32 i = 0; i < _candidates.length; i += 1) {

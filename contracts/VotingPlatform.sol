@@ -29,6 +29,7 @@ contract VotingPlatform {
         bool _multipleChoice,
         uint _dateOfStart,
         uint _dateOfEnd,
+        uint _dateOfEndAddPrivateKeys,
         VotingPlatformLib.Candidate[] memory _candidates,
         uint _modulus,
         uint _exponent
@@ -38,6 +39,7 @@ contract VotingPlatform {
                 _multipleChoice,
                 _dateOfStart,
                 _dateOfEnd,
+                _dateOfEndAddPrivateKeys,
                 _candidates,
                 _modulus,
                 _exponent

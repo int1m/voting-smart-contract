@@ -1,5 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { expect } from 'chai';
+import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import * as crypto from 'crypto';
 import { Oracle } from '../scripts/Oracle';
@@ -91,15 +92,11 @@ describe('Vote', () => {
   it('should push ballot', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),
     );
-
-    const ballotIndex = ethers.BigNumber.from(result.value).toNumber();
-
-    await expect(ballotIndex).to.be.equal(0);
   });
 
   it('should push two ballot', async () => {
@@ -151,32 +148,32 @@ describe('Vote', () => {
   it('should push ballot private key and decrypted data', async () => {
     const contract = await oracle.createTestVoting(owner);
 
-    const result = await contract.pushBallot(
+    contract.on('BallotAdded', async (eIndex: BigNumber) => {
+      const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
+
+      await contract.pushBallotPrivateKey(eIndex.toNumber(), `0x${privateKeyHex}`);
+
+      const ballotResult = await contract.ballots(0);
+      const encryptedValueBallot: string = ballotResult.encryptedValue;
+      const privateKeyBallot: string = ballotResult.privateKey;
+
+      const decryptedData = crypto.privateDecrypt(
+        {
+          key: Buffer.from(privateKeyBallot.slice(2, privateKeyBallot.length), 'hex').toString('utf8'),
+          passphrase: userSecret,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        },
+        Buffer.from(encryptedValueBallot.slice(2, encryptedValueBallot.length), 'hex'),
+      );
+
+      expect(Array.from<number>(decryptedData)).deep.equal(ballot);
+    });
+
+    await contract.pushBallot(
       `0x${encryptedBallotHex}`,
       messageToHashInt(encryptedBallot).toString(),
       unBlindedSignature.toString(),
     );
-
-    const ballotIndex = ethers.BigNumber.from(result.value).toNumber();
-
-    const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
-
-    await contract.pushBallotPrivateKey(ballotIndex, `0x${privateKeyHex}`);
-
-    const ballotResult = await contract.ballots(0);
-    const encryptedValueBallot: string = ballotResult.encryptedValue;
-    const privateKeyBallot: string = ballotResult.privateKey;
-
-    const decryptedData = crypto.privateDecrypt(
-      {
-        key: Buffer.from(privateKeyBallot.slice(2, privateKeyBallot.length), 'hex').toString('utf8'),
-        passphrase: userSecret,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-      },
-      Buffer.from(encryptedValueBallot.slice(2, encryptedValueBallot.length), 'hex'),
-    );
-
-    expect(Array.from<number>(decryptedData)).deep.equal(ballot);
   });
 
   it('should return ballots array length', async () => {
