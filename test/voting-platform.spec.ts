@@ -1,6 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
+import { delay } from '@nomiclabs/hardhat-etherscan/dist/src/etherscan/EtherscanService';
 import { expect } from 'chai';
-import { Contract } from 'ethers';
+import { BigNumber, Contract } from 'ethers';
 import { ethers } from 'hardhat';
 import { Oracle } from '../scripts/Oracle';
 
@@ -24,10 +25,34 @@ describe('VotingPlatform', () => {
       Math.round(Date.now() / 1000) + 84600,
       Math.round(Date.now() / 1000) + 84600,
       oracle.candidates,
+      100,
       oracle.modulus,
       oracle.exponent,
     );
   });
+
+  it('should get Vote by index and call Vote method', async () => {
+    contract.on('VoteAdded', async (eIndex: BigNumber) => {
+      const candidatesArrayLength = ethers.BigNumber.from(
+        await contract.votes[eIndex.toNumber()].getCandidateCount(),
+      ).toNumber();
+      expect(candidatesArrayLength).to.be.equal(1);
+    });
+
+    await delay(1000);
+    await contract.createVote(
+      false,
+      Math.round(Date.now() / 1000) - 60,
+      Math.round(Date.now() / 1000) + 84600,
+      Math.round(Date.now() / 1000) + 84600,
+      oracle.candidates,
+      100,
+      oracle.modulus,
+      oracle.exponent,
+    );
+
+    await delay(3000);
+  }).timeout(5000);
 
   it('should emitted event added vote', async () => {
     await expect(
@@ -37,6 +62,7 @@ describe('VotingPlatform', () => {
         Math.round(Date.now() / 1000) + 84600,
         Math.round(Date.now() / 1000) + 84600,
         oracle.candidates,
+        100,
         oracle.modulus,
         oracle.exponent,
       ),
@@ -50,6 +76,7 @@ describe('VotingPlatform', () => {
       Math.round(Date.now() / 1000) + 84600,
       Math.round(Date.now() / 1000) + 84600,
       oracle.candidates,
+      100,
       oracle.modulus,
       oracle.exponent,
     );
@@ -68,6 +95,7 @@ describe('VotingPlatform', () => {
         Math.round(Date.now() / 1000) + 84600,
         Math.round(Date.now() / 1000) + 84600,
         oracle.candidates,
+        100,
         oracle.modulus,
         oracle.exponent,
       ),

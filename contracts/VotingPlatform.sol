@@ -2,13 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "./VotingPlatformLib.sol";
 import "./Vote.sol";
 
 contract VotingPlatform {
     address public owner;
-    Vote[] private votes;
+    Vote[] public votes;
 
     event VoteAdded(uint index);
 
@@ -31,6 +30,7 @@ contract VotingPlatform {
         uint _dateOfEnd,
         uint _dateOfEndAddPrivateKeys,
         VotingPlatformLib.Candidate[] memory _candidates,
+        uint _votersCount,
         uint _modulus,
         uint _exponent
     ) external onlyOwner {
@@ -41,6 +41,7 @@ contract VotingPlatform {
                 _dateOfEnd,
                 _dateOfEndAddPrivateKeys,
                 _candidates,
+                _votersCount,
                 _modulus,
                 _exponent
             )

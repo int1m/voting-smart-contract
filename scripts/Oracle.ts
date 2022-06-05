@@ -30,6 +30,7 @@ class Oracle {
     dateOfStart: number = Math.round(Date.now() / 1000) - 60,
     dateOfEnd: number = Math.round(Date.now() / 1000) + 86400,
     dateOfEndAddPrivateKeys: number = Math.round(Date.now() / 1000) + 86400,
+    votersCount = 100,
   ): Promise<Contract> {
     const Vote = await ethers.getContractFactory('Vote', owner);
     const contract = await Vote.deploy(
@@ -38,6 +39,7 @@ class Oracle {
       dateOfEnd,
       dateOfEndAddPrivateKeys,
       this.candidates,
+      votersCount,
       this.modulus,
       this.exponent,
     );

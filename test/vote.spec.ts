@@ -274,7 +274,7 @@ describe('Vote', () => {
     const contract = await oracle.createTestVoting(
       owner,
       false,
-      startDate,
+      startDate - 10,
       startDate + 15,
       startDate + 15,
     );
@@ -291,7 +291,7 @@ describe('Vote', () => {
       unBlindedSignature.toString(),
     );
 
-    await delay(5000);
+    await delay(7000);
 
     const privateKeyHex = Buffer.from(userKeys.privateKey, 'utf8').toString('hex');
     await expect(
@@ -343,6 +343,26 @@ describe('Vote', () => {
         unBlindedSignature.toString(),
       ),
     ).to.be.revertedWith('Voting is over');
+  });
+
+  it('should throw an error ballots exceeded', async () => {
+    const startDate = Math.round(Date.now() / 1000) - 100;
+    const contract = await oracle.createTestVoting(
+      owner,
+      false,
+      startDate,
+      startDate + 86400,
+      startDate + 86400,
+      0,
+    );
+
+    await expect(
+      contract.pushBallot(
+        `0x${encryptedBallotHex}`,
+        messageToHashInt(encryptedBallot).toString(),
+        unBlindedSignature.toString(),
+      ),
+    ).to.be.revertedWith('Ballots exceeded');
   });
 
   it('should throw an error signature not verified', async () => {

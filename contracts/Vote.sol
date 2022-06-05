@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "./VotingPlatformLib.sol";
 
 contract Vote {
@@ -11,10 +10,11 @@ contract Vote {
     uint public dateOfStart;
     uint public dateOfEnd;
     uint public dateOfEndAddPrivateKeys;
+    VotingPlatformLib.Candidate[] public candidates;
+    uint public votersCount;
     uint public modulus;
     uint public exponent;
     uint[] public verifiedSignature;
-    VotingPlatformLib.Candidate[] public candidates;
     Ballot[] public ballots;
 
     struct Ballot {
@@ -38,6 +38,7 @@ contract Vote {
         uint _dateOfEnd,
         uint _dateOfEndAddPrivateKeys,
         VotingPlatformLib.Candidate[] memory _candidates,
+        uint _votersCount,
         uint _modulus,
         uint _exponent
     ) votingCreateDateTimeCheck(_dateOfStart, _dateOfEnd, _dateOfEndAddPrivateKeys) {
@@ -46,6 +47,7 @@ contract Vote {
         dateOfStart = _dateOfStart;
         dateOfEnd = _dateOfEnd;
         dateOfEndAddPrivateKeys = _dateOfEndAddPrivateKeys;
+        votersCount = _votersCount;
         modulus = _modulus;
         exponent = _exponent;
         for (uint32 i = 0; i < _candidates.length; i += 1) {
@@ -93,6 +95,11 @@ contract Vote {
         _;
     }
 
+    modifier numberOfVotesCheck() {
+        require(ballots.length + 1 <= votersCount, 'Ballots exceeded');
+        _;
+    }
+
     function expMod(
         uint _signature,
         uint _modulus,
@@ -132,7 +139,7 @@ contract Vote {
         bytes memory _encryptedValue,
         uint _originalMessageHash,
         uint _signature
-    ) public signVerify(_originalMessageHash, _signature) signNotUsed(_signature) ballotDateTimeCheck {
+    ) public signVerify(_originalMessageHash, _signature) signNotUsed(_signature) numberOfVotesCheck ballotDateTimeCheck {
         ballots.push(Ballot({
             owner : msg.sender,
             encryptedValue : _encryptedValue,
